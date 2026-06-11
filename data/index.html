@@ -1,0 +1,903 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MavSphere Sensor Node</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success-bg: #ecfdf5;
+      --success-border: #10b981;
+      --error-bg: #fef2f2;
+      --error-border: #ef4444;
+      --info-bg: #eff6ff;
+      --info-border: #3b82f6;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      padding-bottom: 110px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin: 0 0 8px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(244, 247, 251, 0.95);
+      backdrop-filter: blur(6px);
+      padding: 12px 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(209, 213, 219, 0.7);
+    }
+
+    .toolbar-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toolbar-left,
+    .toolbar-right {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 0.95rem;
+      box-shadow: var(--shadow);
+    }
+
+    .status-pill.unsaved {
+      color: #b45309;
+      border-color: #f59e0b;
+      background: #fffbeb;
+    }
+
+    .status-pill.saved {
+      color: #166534;
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+
+    .button {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      box-shadow: var(--shadow);
+    }
+
+    .button:hover {
+      background: #f9fafb;
+    }
+
+    .button.primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .button.primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .banner {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+      box-shadow: var(--shadow);
+    }
+
+    .banner.show {
+      display: block;
+    }
+
+    .banner.success {
+      background: var(--success-bg);
+      border-color: var(--success-border);
+    }
+
+    .banner.error {
+      background: var(--error-bg);
+      border-color: var(--error-border);
+    }
+
+    .banner.info {
+      background: var(--info-bg);
+      border-color: var(--info-border);
+    }
+
+    fieldset {
+      margin: 0 0 16px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    legend {
+      padding: 0 8px;
+      font-weight: bold;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    .field label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      font-size: 0.95rem;
+    }
+
+    input[type="checkbox"] {
+      width: auto;
+      min-width: auto;
+      transform: scale(1.1);
+    }
+
+    .inline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .password-wrap {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .password-wrap input[type="password"],
+    .password-wrap input[type="text"] {
+      flex: 1 1 260px;
+    }
+
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: normal;
+      margin: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f9fafb;
+      font-size: 0.9rem;
+    }
+
+    td input,
+    td select {
+      padding: 8px 10px;
+      font-size: 0.9rem;
+    }
+
+    pre {
+      margin: 0;
+      background: #0f172a;
+      color: #e5e7eb;
+      padding: 14px;
+      border-radius: 10px;
+      overflow: auto;
+      font-size: 0.9rem;
+    }
+
+    .section-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+
+    .bottom-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid var(--border);
+      padding: 10px 16px;
+      box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .bottom-bar-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .bottom-bar-left {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .bottom-bar-right {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+@media (max-width: 820px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar-inner {
+    align-items: stretch;
+  }
+
+  .toolbar-left,
+  .toolbar-right {
+    width: 100%;
+  }
+
+  .toolbar-right {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .toolbar-right .button {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .bottom-bar-inner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .bottom-bar-left {
+    width: 100%;
+  }
+
+  .bottom-bar-right {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .bottom-bar-right .button {
+    width: 100%;
+    margin-right: 0;
+  }
+}
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <div class="toolbar-left">
+        <div id="dirtyState" class="status-pill saved">Saved</div>
+      </div>
+      <div class="toolbar-right">
+        <button class="button" onclick="loadAll(true)">Refresh</button>
+        <button id="topSaveBtn" class="button primary" onclick="saveConfig()">Save &amp; Reboot</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <h1>MavSphere ESP32 Sensor Node</h1>
+   <div class="subtitle">Bootstrap configuration for Wi-Fi, layout-agent MQTT, sensors, and RFID.</div>
+   <div id="configSummary" class="banner show info"></div>
+
+    <div id="messageBanner" class="banner"></div>
+
+    <fieldset>
+      <legend>Status</legend>
+      <div id="mqttStatusBanner" style="padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:0.85rem;display:none;"></div>
+      <div id="rfidStatusBanner" style="padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:0.85rem;display:none;"></div>
+      <pre id="status"></pre>
+    </fieldset>
+
+    <fieldset>
+      <legend>Node log</legend>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px;">Last 40 log lines — updates every 5 seconds</div>
+      <pre id="logPanel" style="background:#0f172a;color:#e2e8f0;padding:12px;border-radius:8px;font-size:0.72rem;line-height:1.5;max-height:220px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;"></pre>
+    </fieldset>
+
+    <fieldset>
+      <legend>General</legend>
+      <div class="grid">
+        <div class="field">
+          <label for="nodeId">Node ID</label>
+          <input id="nodeId" />
+        </div>
+        <div class="field">
+          <label for="hostname">Hostname</label>
+          <input id="hostname" />
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Wi-Fi</legend>
+      <div class="grid">
+        <div class="field">
+          <label for="wifiSsid">SSID</label>
+          <input id="wifiSsid" />
+        </div>
+        <div class="field full">
+          <label for="wifiPassword">Password</label>
+          <div class="password-wrap">
+            <input id="wifiPassword" type="password" />
+            <label class="checkbox-label">
+              <input id="showWifiPassword" type="checkbox" />
+              Show password
+            </label>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>MQTT / Layout Agent</legend>
+      <div class="hint">
+        This node connects to the layout-agent over your local Wi-Fi using MQTT.
+        Wi-Fi SSID and MQTT Broker / Layout Agent Host are required before the node can leave bootstrap mode.
+        MQTT username and password are optional.
+      </div>
+
+      <div class="grid">
+        <div class="field full">
+          <label class="checkbox-label">
+            <input id="mqttEnabled" type="checkbox" />
+            Enabled
+          </label>
+        </div>
+
+        <div class="field">
+          <label for="mqttHost">MQTT Broker / Layout Agent Host</label>
+          <input id="mqttHost" />
+        </div>
+
+        <div class="field">
+          <label for="mqttPort">Port</label>
+          <input id="mqttPort" type="number" />
+        </div>
+
+        <div class="field">
+          <label for="mqttUsername">MQTT Username (optional)</label>
+          <input id="mqttUsername" />
+        </div>
+
+        <div class="field full">
+          <label for="mqttPassword">MQTT Password (optional)</label>
+          <div class="password-wrap">
+            <input id="mqttPassword" type="password" />
+            <label class="checkbox-label">
+              <input id="showMqttPassword" type="checkbox" />
+              Show password
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="mqttTopicPrefix">Topic Prefix</label>
+          <input id="mqttTopicPrefix" />
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Digital Sensors</legend>
+      <div class="section-actions">
+        <button class="button" type="button" onclick="addSensorRow()">Add sensor</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Enabled</th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>GPIO</th>
+            <th>Invert</th>
+            <th>Debounce ms</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="sensorRows"></tbody>
+      </table>
+    </fieldset>
+
+    <fieldset>
+      <legend>RFID (MFRC522)</legend>
+      <div class="grid">
+        <div class="field full">
+          <label class="checkbox-label">
+            <input id="rfidEnabled" type="checkbox" />
+            Enabled
+          </label>
+        </div>
+
+        <div class="field">
+          <label for="rfidId">Reader ID</label>
+          <input id="rfidId" />
+        </div>
+
+        <div class="field">
+          <label for="rfidSuppress">Duplicate suppress ms</label>
+          <input id="rfidSuppress" type="number" />
+        </div>
+
+        <div class="field">
+          <label for="rfidSs">SS/CS Pin</label>
+          <input id="rfidSs" type="number" />
+        </div>
+
+        <div class="field">
+          <label for="rfidRst">RST Pin</label>
+          <input id="rfidRst" type="number" />
+        </div>
+
+        <div class="field">
+          <label for="rfidSck">SCK Pin</label>
+          <input id="rfidSck" type="number" />
+        </div>
+
+        <div class="field">
+          <label for="rfidMiso">MISO Pin</label>
+          <input id="rfidMiso" type="number" />
+        </div>
+
+        <div class="field">
+          <label for="rfidMosi">MOSI Pin</label>
+          <input id="rfidMosi" type="number" />
+        </div>
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="bottom-bar-inner">
+      <div class="bottom-bar-left" id="bottomStatusText">Saved</div>
+      <div class="bottom-bar-right">
+        <button id="bottomSaveBtn" class="button primary" onclick="saveConfig()">Save &amp; Reboot</button>
+        <button class="button" onclick="loadAll(true)">Refresh</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+let currentConfig = null;
+let formDirty = false;
+
+function setDirtyState() {
+  const text = formDirty ? 'Unsaved changes' : 'Saved';
+  const top = document.getElementById('dirtyState');
+  const bottom = document.getElementById('bottomStatusText');
+
+  top.textContent = text;
+  top.className = formDirty ? 'status-pill unsaved' : 'status-pill saved';
+  bottom.textContent = text;
+}
+
+function showMessage(message, type = 'info') {
+  const el = document.getElementById('messageBanner');
+  el.textContent = message;
+  el.className = `banner show ${type}`;
+}
+
+function clearMessage() {
+  const el = document.getElementById('messageBanner');
+  el.textContent = '';
+  el.className = 'banner';
+}
+
+function updateConfigSummary() {
+  const wifiOk = (document.getElementById('wifiSsid')?.value || '').trim() !== '';
+  const mqttOk = (document.getElementById('mqttHost')?.value || '').trim() !== '';
+
+  const messages = [];
+  messages.push(`Wi-Fi SSID: ${wifiOk ? 'configured' : 'missing'}`);
+  messages.push(`Layout-agent host: ${mqttOk ? 'configured' : 'missing'}`);
+
+  if (wifiOk && mqttOk) {
+    messages.push('Bootstrap requirements satisfied.');
+  } else {
+    messages.push('Node will remain in bootstrap mode until both are configured.');
+  }
+
+  const el = document.getElementById('configSummary');
+  if (el) {
+    el.textContent = messages.join('\n');
+  }
+}
+
+function validateBeforeSave() {
+  const wifiSsid = document.getElementById('wifiSsid').value.trim();
+  const mqttHost = document.getElementById('mqttHost').value.trim();
+
+  const problems = [];
+  if (!wifiSsid) problems.push('Wi-Fi SSID is required.');
+  if (!mqttHost) problems.push('MQTT Broker / Layout Agent Host is required.');
+
+  return problems;
+}
+
+function markDirty() {
+  formDirty = true;
+  setDirtyState();
+  updateConfigSummary();
+}
+
+function attachDirtyTracking(root = document) {
+  root.querySelectorAll('input, select, textarea').forEach(el => {
+    if (el.dataset.dirtyBound === '1') return;
+    el.addEventListener('input', markDirty);
+    el.addEventListener('change', markDirty);
+    el.dataset.dirtyBound = '1';
+  });
+}
+
+function wirePasswordToggles() {
+  const wifiToggle = document.getElementById('showWifiPassword');
+  const wifiPassword = document.getElementById('wifiPassword');
+  wifiToggle.onchange = () => {
+    wifiPassword.type = wifiToggle.checked ? 'text' : 'password';
+  };
+
+  const mqttToggle = document.getElementById('showMqttPassword');
+  const mqttPassword = document.getElementById('mqttPassword');
+  mqttToggle.onchange = () => {
+    mqttPassword.type = mqttToggle.checked ? 'text' : 'password';
+  };
+}
+
+function sensorRow(s = {enabled:true,id:'',name:'',type:'DIGITAL_OCCUPANCY',gpio:0,invert:true,debounceMs:40}) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="enabled" type="checkbox" ${s.enabled ? 'checked' : ''}></td>
+    <td><input class="id" value="${s.id || ''}"></td>
+    <td><input class="name" value="${s.name || ''}"></td>
+    <td>
+      <select class="type">
+        <option ${s.type === 'DIGITAL_OCCUPANCY' ? 'selected' : ''}>DIGITAL_OCCUPANCY</option>
+        <option ${s.type === 'IR_BREAK_BEAM' ? 'selected' : ''}>IR_BREAK_BEAM</option>
+        <option ${s.type === 'DISABLED' ? 'selected' : ''}>DISABLED</option>
+      </select>
+    </td>
+    <td><input class="gpio" type="number" value="${s.gpio ?? 0}"></td>
+    <td><input class="invert" type="checkbox" ${s.invert ? 'checked' : ''}></td>
+    <td><input class="debounce" type="number" value="${s.debounceMs ?? 30}"></td>
+    <td><button class="button" type="button" onclick="removeSensorRow(this)">Remove</button></td>
+  `;
+  document.getElementById('sensorRows').appendChild(tr);
+  attachDirtyTracking(tr);
+}
+
+function removeSensorRow(button) {
+  button.closest('tr').remove();
+  formDirty = true;
+  setDirtyState();
+}
+
+function addSensorRow() {
+  sensorRow();
+  formDirty = true;
+  setDirtyState();
+}
+
+async function loadStatusOnly() {
+  const statusRes = await fetch('/api/status');
+  const status = await statusRes.json();
+  document.getElementById('status').textContent = JSON.stringify(status, null, 2);
+
+  // MQTT connection detail banner
+  const banner = document.getElementById('mqttStatusBanner');
+  if (banner) {
+    const connected = status.mqttConnected;
+    const host = status.mqttHost || '?';
+    const port = status.mqttPort || 1883;
+    if (connected) {
+      banner.style.display = 'block';
+      banner.style.background = 'var(--success-bg)';
+      banner.style.border = '1px solid var(--success-border)';
+      banner.style.color = '#065f46';
+      banner.textContent = `✓ MQTT connected to ${host}:${port}`;
+    } else {
+      banner.style.display = 'block';
+      banner.style.background = 'var(--error-bg)';
+      banner.style.border = '1px solid var(--error-border)';
+      banner.style.color = '#991b1b';
+      banner.textContent = `✗ MQTT not connected — trying ${host}:${port}`;
+    }
+  }
+
+  // RFID hardware status banner. RFID is optional: disabled is OK;
+  // configured-but-not-detected should be visible but must not block the node.
+  const rfidBanner = document.getElementById('rfidStatusBanner');
+  if (rfidBanner) {
+    if (!status.rfidConfigured && !status.rfidEnabled) {
+      rfidBanner.style.display = 'none';
+    } else if (status.rfidReady) {
+      rfidBanner.style.display = 'block';
+      rfidBanner.style.background = 'var(--success-bg)';
+      rfidBanner.style.border = '1px solid var(--success-border)';
+      rfidBanner.style.color = '#065f46';
+      rfidBanner.textContent = `✓ RFID ready — ${status.rfidReaderId || 'reader'} ${status.rfidVersionReg ? '(' + status.rfidVersionReg + ')' : ''}`;
+    } else {
+      rfidBanner.style.display = 'block';
+      rfidBanner.style.background = 'var(--error-bg)';
+      rfidBanner.style.border = '1px solid var(--error-border)';
+      rfidBanner.style.color = '#991b1b';
+      rfidBanner.textContent = `⚠ RFID configured but reader not detected — ${status.rfidLastError || 'check wiring and pins'}`;
+    }
+  }
+
+  // Fetch and display log lines
+  try {
+    const logRes = await fetch('/api/logs');
+    const lines = await logRes.json();
+    const logPanel = document.getElementById('logPanel');
+    if (logPanel && Array.isArray(lines)) {
+      logPanel.textContent = lines.join('\n');
+      logPanel.scrollTop = logPanel.scrollHeight;
+    }
+  } catch {}
+}
+
+async function loadConfig(force = false) {
+  if (formDirty && !force) {
+    return;
+  }
+
+  const configRes = await fetch('/api/config');
+  currentConfig = await configRes.json();
+
+  document.getElementById('nodeId').value = currentConfig.nodeId || '';
+  document.getElementById('hostname').value = currentConfig.wifi?.hostname || '';
+  document.getElementById('wifiSsid').value = currentConfig.wifi?.ssid || '';
+  document.getElementById('wifiPassword').value = currentConfig.wifi?.password || '';
+  document.getElementById('mqttEnabled').checked = !!currentConfig.mqtt?.enabled;
+  document.getElementById('mqttHost').value = currentConfig.mqtt?.host || '';
+  document.getElementById('mqttPort').value = currentConfig.mqtt?.port || 1883;
+  document.getElementById('mqttUsername').value = currentConfig.mqtt?.username || '';
+  document.getElementById('mqttPassword').value = currentConfig.mqtt?.password || '';
+  document.getElementById('mqttTopicPrefix').value = currentConfig.mqtt?.topicPrefix || 'layout';
+
+  document.getElementById('sensorRows').innerHTML = '';
+  (currentConfig.sensors || []).forEach(sensorRow);
+
+  document.getElementById('rfidEnabled').checked = !!currentConfig.rfid?.enabled;
+  document.getElementById('rfidId').value = currentConfig.rfid?.id || 'reader1';
+  document.getElementById('rfidSs').value = currentConfig.rfid?.ssPin ?? 10;
+  document.getElementById('rfidRst').value = currentConfig.rfid?.rstPin ?? 9;
+  document.getElementById('rfidSck').value = currentConfig.rfid?.sckPin ?? 12;
+  document.getElementById('rfidMiso').value = currentConfig.rfid?.misoPin ?? 13;
+  document.getElementById('rfidMosi').value = currentConfig.rfid?.mosiPin ?? 11;
+  document.getElementById('rfidSuppress').value = currentConfig.rfid?.duplicateSuppressMs ?? 3000;
+
+  formDirty = false;
+  setDirtyState();
+  updateConfigSummary();
+}
+
+async function loadAll(force = false) {
+  await Promise.all([
+    loadStatusOnly(),
+    loadConfig(force)
+  ]);
+}
+
+function gatherConfig() {
+  return {
+    nodeId: document.getElementById('nodeId').value,
+    wifi: {
+      ssid: document.getElementById('wifiSsid').value,
+      password: document.getElementById('wifiPassword').value,
+      hostname: document.getElementById('hostname').value
+    },
+    mqtt: {
+      enabled: document.getElementById('mqttEnabled').checked,
+      host: document.getElementById('mqttHost').value,
+      port: Number(document.getElementById('mqttPort').value || 1883),
+      username: document.getElementById('mqttUsername').value,
+      password: document.getElementById('mqttPassword').value,
+      topicPrefix: document.getElementById('mqttTopicPrefix').value
+    },
+    sensors: [...document.querySelectorAll('#sensorRows tr')].map(tr => ({
+      enabled: tr.querySelector('.enabled').checked,
+      id: tr.querySelector('.id').value,
+      name: tr.querySelector('.name').value,
+      type: tr.querySelector('.type').value,
+      gpio: Number(tr.querySelector('.gpio').value),
+      invert: tr.querySelector('.invert').checked,
+      debounceMs: Number(tr.querySelector('.debounce').value || 30)
+    })),
+    rfid: {
+      enabled: document.getElementById('rfidEnabled').checked,
+      id: document.getElementById('rfidId').value,
+      ssPin: Number(document.getElementById('rfidSs').value),
+      rstPin: Number(document.getElementById('rfidRst').value),
+      sckPin: Number(document.getElementById('rfidSck').value),
+      misoPin: Number(document.getElementById('rfidMiso').value),
+      mosiPin: Number(document.getElementById('rfidMosi').value),
+      duplicateSuppressMs: Number(document.getElementById('rfidSuppress').value || 3000)
+    }
+  };
+}
+
+function setSavingState(saving) {
+  document.getElementById('topSaveBtn').disabled = saving;
+  document.getElementById('bottomSaveBtn').disabled = saving;
+}
+
+async function saveConfig() {
+  setSavingState(true);
+
+  const problems = validateBeforeSave();
+  if (problems.length > 0) {
+    showMessage(
+      problems.join('\n') + '\n\nThe node will remain in bootstrap mode until these are configured.',
+      'error'
+    );
+    setSavingState(false);
+    return;
+  }
+
+  showMessage('Saving configuration...', 'info');
+
+  try {
+    const res = await fetch('/api/config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(gatherConfig())
+    });
+
+    const json = await res.json();
+
+    if (!res.ok || json.saved === false) {
+      showMessage(`Save failed:\n${JSON.stringify(json, null, 2)}`, 'error');
+      return;
+    }
+
+    formDirty = false;
+    setDirtyState();
+    showMessage('Configuration saved — node is rebooting. Reconnect in a few seconds.', 'success');
+    document.getElementById('topSaveBtn').disabled = true;
+    document.getElementById('bottomSaveBtn').disabled = true;
+  } catch (err) {
+    showMessage(`Save failed:\n${err}`, 'error');
+  } finally {
+    setSavingState(false);
+  }
+}
+
+async function rebootNode() {
+  showMessage('Reboot requested...', 'info');
+  await fetch('/api/reboot', { method: 'POST' });
+}
+
+attachDirtyTracking();
+wirePasswordToggles();
+setDirtyState();
+updateConfigSummary();
+loadAll(true);
+setInterval(loadStatusOnly, 5000);
+</script>
+</body>
+</html>

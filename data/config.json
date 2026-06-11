@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "nodeId": "node-01",
+  "wifi": {
+    "ssid": "",
+    "password": "",
+    "dhcp": true,
+    "hostname": "mavsphere-node-01"
+  },
+  "mqtt": {
+    "enabled": true,
+    "host": "",
+    "port": 1883,
+    "username": "",
+    "password": "",
+    "clientId": "",
+    "topicPrefix": "layout"
+  },
+  "sensors": [],
+  "rfid": {
+    "enabled": false,
+    "id": "reader1",
+    "ssPin": 17,
+    "rstPin": 33,
+    "sckPin": 32,
+    "misoPin": 13,
+    "mosiPin": 26,
+    "duplicateSuppressMs": 200,
+    "readers": [
+      {
+        "enabled": false,
+        "id": "reader1",
+        "sensorId": "reader1",
+        "ssPin": 17,
+        "rstPin": 33,
+        "sckPin": 32,
+        "misoPin": 13,
+        "mosiPin": 26,
+        "duplicateSuppressMs": 200
+      },
+      {
+        "enabled": false,
+        "id": "reader2",
+        "sensorId": "reader2",
+        "ssPin": 25,
+        "rstPin": 33,
+        "sckPin": 32,
+        "misoPin": 13,
+        "mosiPin": 26,
+        "duplicateSuppressMs": 200
+      },
+      {
+        "enabled": false,
+        "id": "reader3",
+        "sensorId": "reader3",
+        "ssPin": 2,
+        "rstPin": 33,
+        "sckPin": 32,
+        "misoPin": 13,
+        "mosiPin": 26,
+        "duplicateSuppressMs": 200
+      }
+    ]
+  }
+}
