@@ -6,28 +6,30 @@ This project is an **ESP32-based sensor node** for MavSphere layouts.
 
 It provides:
 
-* Block occupancy detection (digital / current sensing)
-* IR beam detection (stop sensors)
-* Optional RFID reader support
+* 16 individually opto-isolated field sensor inputs (block detectors, IR beams, reed switches, etc.)
+* 16 driven output channels (signal LEDs and low-current accessories)
+* Optional RFID reader support (up to 3 local RC522 readers)
 * Local configuration via Wi-Fi Access Point (AP mode)
 * Runtime communication via MQTT (through the **layout agent**)
 * On-device display (T-Display)
 * Persistent configuration using LittleFS with **versioning + backup + recovery**
+
+The firmware targets the **Rev D Rail I/O Node PCB**. See [`docs/hardware/`](./docs/hardware/) for the hardware reference and full design specification.
 
 ---
 
 # Architecture
 
 ```
-[Sensors + RFID]
-        ↓
-   ESP32 Node
-        ↓ (MQTT)
-   Layout Agent
-        ↓
-     Backend
-        ↓
-        UI
+[Sensors + RFID + Signal LEDs]
+            ↓
+       ESP32 Node
+            ↓ (MQTT)
+       Layout Agent
+            ↓
+          Backend
+            ↓
+            UI
 ```
 
 ### Key rule:
@@ -125,11 +127,13 @@ Stored in:
 
 # Hardware
 
+The firmware targets the **Rev D Rail I/O Node PCB**. Full details are in [`docs/hardware/HARDWARE_REFERENCE.md`](./docs/hardware/HARDWARE_REFERENCE.md).
+
 ## Supported boards
 
 ### ESP32 (working)
 
-* LilyGO T-Display (ST7789)
+* LilyGO T-Display (ST7789) — **mandatory MCU module for Rev D**
 
 ### ESP32-S3 (scaffolded)
 
@@ -137,26 +141,34 @@ Stored in:
 
 ---
 
-## GPIO usage
+## GPIO usage (Rev D — fixed)
 
-### Recommended pins
+### SPI buses
 
-| Purpose | Pin |
-| ------- | --- |
-| B1_OCC  | 32  |
-| B2_OCC  | 33  |
-| STOP_E1 | 34  |
-| STOP_W1 | 36  |
+| Bus | Purpose | SCK | MOSI | CS | DC | RST |
+|-----|---------|-----|------|----|----|-----|
+| VSPI | TFT display | 18 | 19 | 5 | 16 | 23 |
 
-### RFID (SPI)
+| Bus | Purpose | SCK | MOSI | MISO | SS/CS |
+|-----|---------|-----|------|------|-------|
+| HSPI | RFID readers | 32 | 26 | 13 | See below |
+
+### RFID (HSPI) — individual SS and shared RST
 
 | Signal | Pin |
 | ------ | --- |
-| SS     | 27  |
-| RST    | 26  |
-| SCK    | 14  |
-| MISO   | 13  |
-| MOSI   | 25  |
+| SS — Reader 1 | 17 |
+| SS — Reader 2 | 25 |
+| SS — Reader 3 | 2  |
+| RST (shared)  | 33 |
+
+### I2C (MCP23017 expanders)
+
+| Signal | Pin |
+|--------|-----|
+| SDA | 21 |
+| SCL | 22 |
+| MCP23017 interrupt | 27 |
 
 ---
 
@@ -390,7 +402,6 @@ Cause:
 
 # Recommended Next Improvements
 
-* Factory reset (long button hold)
 * Offline event buffering
 * Config UI validation
 * OTA firmware update
